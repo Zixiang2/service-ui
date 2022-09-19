@@ -31,17 +31,17 @@ node {
 
         stage('Build Docker Image') {
             withEnv(["NODE_OPTIONS=--max_old_space_size=4096"]) {
-                sh 'make IMAGE_NAME=$REGISTRY/service-ui:$VERSION build-image-dev v=$VERSION'
+                sh 'make IMAGE_NAME=$REGISTRY/service-ui:$VERSION-hotfix1 build-image-dev v=$VERSION'
             }
         }
 
         stage('Push to Regestry') {
             sh 'aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REGISTRY'
-            sh 'docker push $REGISTRY/service-ui:$VERSION'
+            sh 'docker push $REGISTRY/service-ui:$VERSION-hotfix1'
         }
 
         stage('Cleanup') {
-            sh 'docker rmi $REGISTRY/service-ui:$VERSION'
+            sh 'docker rmi $REGISTRY/service-ui:$VERSION-hotfix1'
         }
     }
 }
