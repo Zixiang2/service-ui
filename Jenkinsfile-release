@@ -1,0 +1,47 @@
+#!groovy
+properties([
+    parameters ([
+        choice(
+            name: "REGISTRY",
+            choices: ['reportportal', 'public.ecr.aws/v8s8f8g2'],
+            description: "Specify the release registry"
+        ),
+        string(
+            name: "VERSION",
+            defaultValue: "",
+            description: "Release candidate version tag"
+        ),
+        string(
+            name: "BRANCH",
+            defaultValue: "",
+            description: "Specify the GitHub branch from which the image will be built"
+        )
+    ])
+])
+
+node {
+
+    load "$JENKINS_HOME/jobvars.env"
+
+    dir('src/github.com/reportportal/service-ui') {
+
+        stage('Checkout') {
+            checkout scm
+        }
+
+        stage('Build Docker Image') {
+            withEnv(["NODE_OPTIONS=--max_old_space_size=4096"]) {
+                sh 'make IMAGE_NAME=$REGISTRY/service-ui:$VERSION build-image-dev v=$VERSION'
+            }
+        }
+
+        stage('Push to Regestry') {
+            sh 'aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $REGISTRY'
+            sh 'docker push $REGISTRY/service-ui:$VERSION'
+        }
+
+        stage('Cleanup') {
+            sh 'docker rmi $REGISTRY/service-ui:$VERSION'
+        }
+    }
+}
